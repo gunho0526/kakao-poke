@@ -361,6 +361,7 @@ function render() {
 }
 
 /* ---------- 시작 ---------- */
+if (/KAKAOTALK/i.test(navigator.userAgent)) setTimeout(() => { $('#inapp').hidden = false; }, 1500);   // 자동으로 안 넘어갔을 때만 보임
 document.querySelectorAll('.slot').forEach(setupSlot);
 $('#getIos').onclick = getIos;
 $('#getAnd').onclick = getAnd;
