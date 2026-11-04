@@ -91,14 +91,14 @@ input[type=file]{display:none}
 .phones figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
 .guide{color:var(--muted);font-size:14px;line-height:1.85;margin:12px 0 22px;padding-left:18px}
 .guide:last-of-type{margin-bottom:0}
-.guide b{color:var(--ink)}
+.guide b{color:var(--ink);white-space:nowrap}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translate(-50%,20px);opacity:0;background:var(--toast);color:#fff;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);padding:12px 18px;border-radius:999px;font-size:14px;z-index:9;transition:opacity 240ms var(--ease-out),transform 240ms var(--ease-out);pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .inapp b{font-size:17px}.inapp p{color:var(--muted);font-size:14px;line-height:1.75;margin:8px 0 0;white-space:pre-line}
 footer{color:var(--faint);font-size:12px;line-height:1.7;text-align:center;margin-top:30px;white-space:pre-line}
 @supports not (backdrop-filter:blur(1px)){.card{background:var(--bg)}}
 @media (prefers-reduced-motion:reduce){*{transition:opacity 200ms!important}}
-@media (max-width:380px){.types{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:380px){.types{gap:6px}.type span{font-size:11px}}
 </style>
 </head>
 <body>
@@ -125,12 +125,14 @@ footer{color:var(--faint);font-size:12px;line-height:1.7;text-align:center;margi
     <div class="step">2단계</div>
     <h2>포켓몬 사진 올리기</h2>
     <p class="hint">배경은 올리자마자 자동으로 지웁니다
-남은 배경은 '지우기'를 켜고 그 부분을 누르면 됩니다</p>
+남은 배경은 '지우기'를 켜고
+그 부분을 누르면 됩니다</p>
     <div class="find">
       <input id="pkName" type="search" placeholder="포켓몬 이름 (예: 가디)" autocomplete="off" enterkeyhint="search">
       <button class="btn" id="pkFind">나무위키에서 찾기</button>
     </div>
-    <p class="hint small">문서가 열리면 그림을 길게 눌러 사진에 저장한 뒤 아래에 올리면 됩니다</p>
+    <p class="hint small">문서가 열리면 그림을 길게 눌러
+사진에 저장한 뒤 아래에 올리면 됩니다</p>
     <div class="pair">
       <div class="slot" data-who="me">
         <b>내 포켓몬</b>
@@ -164,20 +166,21 @@ footer{color:var(--faint);font-size:12px;line-height:1.7;text-align:center;margi
     <h2>테마 받기</h2>
     <button class="main-btn" id="getIos" disabled>아이폰용 받기</button>
     <ol class="guide">
-      <li>아이폰용 받기를 누르고 <b>카카오톡</b>을 고른 뒤 <b>나에게 보내기</b></li>
-      <li>나와의 채팅방에서 파일을 눌러 <b>테마 적용하기</b></li>
-      <li>채팅방 배경이 그대로면 설정 › 화면 › 배경화면에서 <b>테마 배경 적용</b></li>
+      <li>아이폰용 받기를 누르고<br><b>카카오톡</b>을 고른 뒤 <b>나에게 보내기</b></li>
+      <li>나와의 채팅방에서 파일을 눌러<br><b>테마 적용하기</b></li>
+      <li>채팅방 배경이 그대로면<br>설정 › 화면 › 배경화면에서 <b>테마 배경 적용</b></li>
     </ol>
     <button class="main-btn sub-btn" id="getAnd" disabled>안드로이드용 받기</button>
     <ol class="guide">
-      <li>받은 파일을 눌러 설치합니다. '출처를 알 수 없는 앱' 경고가 뜨면 허용</li>
-      <li>카톡 설정 › 테마에서 <b>포켓몬 ○○ 커스텀</b> 적용. 새로 만들면 이전 커스텀 테마를 덮어씁니다</li>
+      <li>받은 파일을 눌러 설치<br>'출처를 알 수 없는 앱' 경고가 뜨면 허용</li>
+      <li>카톡 설정 › 테마에서<br><b>포켓몬 ○○ 커스텀</b> 적용<br>새로 만들면 이전 커스텀 테마를 덮어씁니다</li>
     </ol>
   </section>
 
   <footer>사진은 이 기기 안에서만 처리되고 어디에도 올라가지 않습니다
 개인 소장, 친구끼리 나눠 쓰는 용도로만 써 주십시오
-안드로이드 조립과 서명 코드: Ruminem/kakaotalk-theme (Apache-2.0)</footer>
+안드로이드 조립과 서명 코드
+Ruminem/kakaotalk-theme (Apache-2.0)</footer>
 </main>
 <div class="toast" id="toast"></div>
 
