@@ -289,6 +289,15 @@ async function getAnd() {
     const listImg = await loadImg(URL.createObjectURL(await bz.file(`${D}theme_background_image.png`).async('blob')));
     extra[`${D}theme_background_image.png`] = await bytesOf(listBg(listImg, sp.me));
     for (let i = 0; i < 4; i++) extra[`${D}theme_passcode_0${i + 1}_checked_image.png`] = await bytesOf(bullet(3, true, sp[BULLET_WHO[i]]));
+    // Use the selected Pokémon type's thumbnail as the installed app icon.
+    const iconImage = await loadImg(`thumb-${T.key}.jpg`);
+    const iconCanvas = document.createElement('canvas');
+    iconCanvas.width = iconCanvas.height = 192;
+    const iconCtx = iconCanvas.getContext('2d');
+    iconCtx.fillStyle = '#FFFFFF'; iconCtx.fillRect(0, 0, 192, 192);
+    const crop = Math.min(iconImage.width, iconImage.height);
+    iconCtx.drawImage(iconImage, (iconImage.width-crop)/2, (iconImage.height-crop)/2, crop, crop, 0, 0, 192, 192);
+    extra[`${D}icon.png`] = await bytesOf(iconCanvas);
     const apk = await mod.buildApk(andCache.tpl, andCache[baseKey], andCache.info, T.android, `포켓몬 ${T.name} 커스텀`, extra);
     const blob = new Blob([apk], { type: 'application/vnd.android.package-archive' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `pokemon-${T.key}-custom.apk`;

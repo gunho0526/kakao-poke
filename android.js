@@ -5,7 +5,7 @@
 // 조립, 서명 코드는 Ruminem/kakaotalk-theme (Apache-2.0) 의 zip.js, apksign.js, apkmix.js 를 쓴다.
 import { readZip, writeZip, crc32 } from './zip.js';
 import { resign } from './apksign.js';
-import { patchColors, patchName } from './apkmix.js';
+
 import { CERT, PUBKEY, PRIVKEY } from './customkey.js';
 
 export const DIR = 'res/drawable-xxhdpi-v4/';
@@ -47,6 +47,38 @@ export function ninePatch(png, cap, pad) {
  * @param {string} name 테마 이름
  * @param {Object<string, Uint8Array>} extra 사진으로 만든 그림 (경로: PNG 바이트)
  */
+// Reference app identity must not leak into generated themes. All replacements
+// are length-preserving so the compiled Android string pools stay valid.
+const OLD_PACKAGE = 'com.kakao.talk.theme.mayimessage1';
+const NEW_PACKAGE = 'com.kakao.talk.theme.pokecustom01';
+const OLD_LABEL = '아이메세지_카톡테마_블루';
+function replaceExact(bytes, from, to, encoding = 'utf8') {
+  const encode = (s) => encoding === 'utf16' ? Uint8Array.from([...s].flatMap(c => [c.charCodeAt(0) & 255, c.charCodeAt(0) >>> 8])) : new TextEncoder().encode(s);
+  const a = encode(from), b = encode(to);
+  if (a.length !== b.length) throw new Error('APK 문자열 길이가 다릅니다');
+  const out = bytes.slice(); let count = 0;
+  for (let i = 0; i <= out.length - a.length; i++) {
+    if (a.every((v, j) => out[i+j] === v)) { out.set(b, i); count++; i += a.length - 1; }
+  }
+  return { data: out, count };
+}
+function fixDexChecksum(dex) {
+  // DEX header: SHA-1 signature [12..32], Adler32 checksum [8..12].
+  return crypto.subtle.digest('SHA-1', dex.subarray(32)).then(hash => {
+    dex.set(new Uint8Array(hash), 12);
+    let a = 1, b = 0;
+    for (let i = 12; i < dex.length; i++) { a = (a + dex[i]) % 65521; b = (b + a) % 65521; }
+    new DataView(dex.buffer, dex.byteOffset).setUint32(8, ((b << 16) | a) >>> 0, true);
+    return dex;
+  });
+}
+function zipRecord(data) { return { method: 0, crc: crc32(data) >>> 0, csize: data.length, usize: data.length, data }; }
+function themeLabel(name) {
+  const max = new TextEncoder().encode(OLD_LABEL).length;
+  while (new TextEncoder().encode(name).length > max) name = name.slice(0, -1);
+  return name + ' '.repeat(max - new TextEncoder().encode(name).length);
+}
+
 export async function buildApk(template, base, info, colors, name, extra) {
   const tpl = readZip(template), bz = readZip(base), items = [];
   // Use a complete, known-installable theme application as the base.
@@ -55,10 +87,28 @@ export async function buildApk(template, base, info, colors, name, extra) {
   if (!tpl.has('classes.dex') || !tpl.has('AndroidManifest.xml') || !tpl.has('resources.arsc')) {
     throw new Error('THEME_TEMPLATE_INVALID: 완전한 카카오톡 테마 APK가 필요합니다.');
   }
+  const label = themeLabel(name);
   for (const [path, rec] of tpl) {
     let src = rec;
+    if (path === 'AndroidManifest.xml') {
+      const changed = replaceExact(rec.data, OLD_PACKAGE, NEW_PACKAGE, 'utf16');
+      if (!changed.count) throw new Error('APK 매니페스트 패키지 교체 실패');
+      src = zipRecord(changed.data);
+    }
+    if (path === 'resources.arsc') {
+      let changed = replaceExact(rec.data, OLD_PACKAGE, NEW_PACKAGE, 'utf16');
+      if (!changed.count) throw new Error('APK 리소스 패키지 교체 실패');
+      changed = replaceExact(changed.data, OLD_LABEL, label);
+      if (!changed.count) throw new Error('APK 테마 이름 교체 실패');
+      src = zipRecord(changed.data);
+    }
+    if (path === 'classes.dex') {
+      const changed = replaceExact(rec.data, OLD_PACKAGE, NEW_PACKAGE);
+      if (!changed.count) throw new Error('APK 실행 코드 패키지 교체 실패');
+      src = zipRecord(await fixDexChecksum(changed.data));
+    }
     if (bz.has(path) && path.startsWith(DIR)) src = bz.get(path);
-    if (extra[path]) { const d = extra[path]; src = { method: 0, crc: crc32(d) >>> 0, csize: d.length, usize: d.length, data: d }; }
+    if (extra[path]) src = zipRecord(extra[path]);
     // The reference APK does not contain our marker colors/name slot.
     // Never corrupt its compiled resource table with an incompatible patch.
     items.push({ name: path, method: src.method, crc: src.crc, csize: src.csize, usize: src.usize, data: src.data });
