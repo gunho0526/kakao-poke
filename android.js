@@ -185,7 +185,7 @@ export async function buildApk(template, base, info, colors, name, extra) {
       if (!changed.count) throw new Error('APK 리소스 패키지 교체 실패');
       // Keep the compiled UTF-8 string pool byte lengths unchanged.
       const named = replaceExact(changed.data, OLD_LABEL, label);
-      if (named.count !== 1) throw new Error('APK 앱 이름 교체 횟수 오류: ' + named.count);
+      if (named.count !== 2) throw new Error('APK 앱 이름 교체 횟수 오류: ' + named.count);
       src = zipRecord(applyThemeColors(named.data, info, colors));
     }
     if (path === 'classes.dex') {
