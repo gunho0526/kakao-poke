@@ -1,7 +1,7 @@
 // 안드로이드 테마(.apk)를 브라우저에서 조립한다.
 // 빈 템플릿 앱(template.apk, 저장소의 make_template.py 를 GitHub Actions 가 구운 것)에 타입별 그림 묶음(android-{타입}.zip)과
 // 사진으로 만든 그림(말풍선, 친구 목록 배경, 잠금 동그라미)을 끼우고,
-// 색 42칸과 테마 이름을 같은 길이로 덮어쓴 뒤 다시 서명한다.
+// 색 49칸과 테마 이름을 같은 길이로 덮어쓴 뒤 다시 서명한다.
 // 조립, 서명 코드는 Ruminem/kakaotalk-theme (Apache-2.0) 의 zip.js, apksign.js, apkmix.js 를 쓴다.
 import { readZip, writeZip, crc32 } from './zip.js';
 import { resign } from './apksign.js';
@@ -43,7 +43,7 @@ export function ninePatch(png, cap, pad) {
  * @param {ArrayBuffer} template 템플릿 APK
  * @param {ArrayBuffer} base 타입별 그림 묶음 zip
  * @param {object} info template.json ({marks, filler})
- * @param {string[]} colors 색 42칸 (#AARRGGBB)
+ * @param {string[]} colors 색 49칸 (#AARRGGBB)
  * @param {string} name 테마 이름
  * @param {Object<string, Uint8Array>} extra 사진으로 만든 그림 (경로: PNG 바이트)
  */
