@@ -178,14 +178,13 @@ export async function buildApk(template, base, info, colors, name, extra) {
     if (path === 'AndroidManifest.xml') {
       const changed = replaceExact(await inflate(rec), OLD_PACKAGE, NEW_PACKAGE, 'utf16');
       if (!changed.count) throw new Error('APK 매니페스트 패키지 교체 실패');
-      src = zipRecord(setManifestAuthor(changed.data));
+      src = zipRecord(changed.data);
     }
     if (path === 'resources.arsc') {
       let changed = replaceExact(await inflate(rec), OLD_PACKAGE, NEW_PACKAGE, 'utf16');
       if (!changed.count) throw new Error('APK 리소스 패키지 교체 실패');
-      changed = replaceExact(changed.data, OLD_LABEL, label);
-      if (!changed.count) throw new Error('APK 테마 이름 교체 실패');
-      src = zipRecord(applyThemeColors(changed.data, info, colors));
+      // Leave compiled label untouched until a proper Android resource rebuild is available.
+      src = zipRecord(changed.data);
     }
     if (path === 'classes.dex') {
       const changed = replaceExact(await inflate(rec), OLD_PACKAGE, NEW_PACKAGE);
