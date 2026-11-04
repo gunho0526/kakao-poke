@@ -294,7 +294,7 @@ async function getAnd() {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `pokemon-${T.key}-custom.apk`;
     document.body.appendChild(a); a.click(); a.remove();
     toast('파일을 받았습니다. 알림에서 눌러 설치해 주십시오');
-  } catch (e) { console.error(e); toast('만들지 못했습니다. 다시 눌러 주십시오'); }
+  } catch (e) { console.error(e); toast(e.message?.startsWith('THEME_TEMPLATE_') ? e.message : '만들지 못했습니다. 다시 눌러 주십시오'); }
   btn.textContent = '안드로이드용 받기'; updateButtons();
 }
 

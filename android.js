@@ -49,16 +49,18 @@ export function ninePatch(png, cap, pad) {
  */
 export async function buildApk(template, base, info, colors, name, extra) {
   const tpl = readZip(template), bz = readZip(base), items = [];
+  // Use a complete, known-installable theme application as the base.
+  // Its compiled manifest, dex and resources remain intact.  This compatibility
+  // path changes PNGs only; legacy resource-color markers do not exist here.
+  if (!tpl.has('classes.dex') || !tpl.has('AndroidManifest.xml') || !tpl.has('resources.arsc')) {
+    throw new Error('THEME_TEMPLATE_INVALID: 완전한 카카오톡 테마 APK가 필요합니다.');
+  }
   for (const [path, rec] of tpl) {
     let src = rec;
-    if (bz.has(path)) src = bz.get(path);
+    if (bz.has(path) && path.startsWith(DIR)) src = bz.get(path);
     if (extra[path]) { const d = extra[path]; src = { method: 0, crc: crc32(d) >>> 0, csize: d.length, usize: d.length, data: d }; }
-    if (path === ARSC) {
-      const arsc = rec.data.slice();
-      patchColors(arsc, info.marks, colors);
-      patchName(arsc, info.filler, name);
-      src = { method: 0, crc: crc32(arsc) >>> 0, csize: arsc.length, usize: arsc.length, data: arsc };
-    }
+    // The reference APK does not contain our marker colors/name slot.
+    // Never corrupt its compiled resource table with an incompatible patch.
     items.push({ name: path, method: src.method, crc: src.crc, csize: src.csize, usize: src.usize, data: src.data });
   }
   return resign(writeZip(items, 4), { cert: CERT, pubkey: PUBKEY, privkey: PRIVKEY });
