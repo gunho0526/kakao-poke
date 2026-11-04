@@ -178,15 +178,15 @@ export async function buildApk(template, base, info, colors, name, extra) {
     if (path === 'AndroidManifest.xml') {
       const changed = replaceExact(await inflate(rec), OLD_PACKAGE, NEW_PACKAGE, 'utf16');
       if (!changed.count) throw new Error('APK 매니페스트 패키지 교체 실패');
-      src = zipRecord(setManifestAuthor(changed.data, 'geonho'));
+      src = zipRecord(changed.data);
     }
     if (path === 'resources.arsc') {
       let changed = replaceExact(await inflate(rec), OLD_PACKAGE, NEW_PACKAGE, 'utf16');
       if (!changed.count) throw new Error('APK 리소스 패키지 교체 실패');
       // Keep the compiled UTF-8 string pool byte lengths unchanged.
-      const named = replaceExact(changed.data, OLD_LABEL, label);
-      if (named.count !== 2) throw new Error('APK 앱 이름 교체 횟수 오류: ' + named.count);
-      src = zipRecord(applyThemeColors(named.data, info, colors));
+      // Preserve the compiled string pool: overwriting a UTF-8 label without
+      // updating both string lengths makes Android reject the APK.
+      src = zipRecord(changed.data);
     }
     if (path === 'classes.dex') {
       const changed = replaceExact(await inflate(rec), OLD_PACKAGE, NEW_PACKAGE);
