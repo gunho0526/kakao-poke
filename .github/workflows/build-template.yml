@@ -1,0 +1,44 @@
+name: 안드로이드 템플릿 굽기
+
+# make_template.py 가 바뀌면 템플릿 앱(template.apk)과 template.json 을 새로 구워 저장소에 넣는다.
+on:
+  push:
+    paths:
+      - make_template.py
+      - .github/workflows/build-template.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: 템플릿 프로젝트 만들기
+        run: python3 make_template.py
+
+      - name: 굽기
+        working-directory: tpl
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: 저장소에 넣기
+        run: |
+          cp tpl/build/outputs/apk/debug/*.apk template.apk
+          git config user.name "template-bot"
+          git config user.email "template-bot@users.noreply.github.com"
+          git add template.apk template.json
+          git commit -m "안드로이드 템플릿 다시 굽기" || echo "바뀐 것 없음"
+          git push
