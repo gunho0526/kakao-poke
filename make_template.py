@@ -52,8 +52,8 @@ android {{
         applicationId '{PKG}'
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName '10.5.0'
+        versionCode 2
+        versionName '26.9.0'   // 카톡은 이 값으로 테마 규격을 판단하는 것으로 보여 공식 샘플(26.9.0)과 맞춘다
     }}
     androidResources {{ noCompress 'arsc' }}
     sourceSets {{ main {{ manifest.srcFile 'AndroidManifest.xml'; java.srcDirs = ['java']; res.srcDirs = ['res'] }} }}
