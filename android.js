@@ -50,7 +50,7 @@ export function ninePatch(png, cap, pad) {
 // Reference app identity must not leak into generated themes. All replacements
 // are length-preserving so the compiled Android string pools stay valid.
 const OLD_PACKAGE = 'com.kakao.talk.theme.mayimessage1';
-const NEW_PACKAGE = 'com.kakao.talk.theme.pokecustom01';
+const NEW_PACKAGE = 'com.kakao.talk.theme.pokecustom02';
 const OLD_LABEL = '아이메세지_카톡테마_블루';
 function replaceExact(bytes, from, to, encoding = 'utf8') {
   const encode = (s) => encoding === 'utf16' ? Uint8Array.from([...s].flatMap(c => [c.charCodeAt(0) & 255, c.charCodeAt(0) >>> 8])) : new TextEncoder().encode(s);
@@ -185,7 +185,7 @@ export async function buildApk(template, base, info, colors, name, extra) {
       if (!changed.count) throw new Error('APK 리소스 패키지 교체 실패');
       // Keep the compiled UTF-8 string pool byte lengths unchanged.
       const named = replaceExact(changed.data, OLD_LABEL, label);
-      if (!named.count) throw new Error('APK 앱 이름 교체 실패');
+      if (named.count !== 1) throw new Error('APK 앱 이름 교체 횟수 오류: ' + named.count);
       src = zipRecord(applyThemeColors(named.data, info, colors));
     }
     if (path === 'classes.dex') {

@@ -276,8 +276,8 @@ async function getAnd() {
   const btn = $('#getAnd'); btn.disabled = true; btn.textContent = '만드는 중';
   try {
     const T = state.type, sp = state.sprites;
-    const mod = await import('./android.js');
-    andCache.tpl ||= await fetchBuf('template.apk');
+    const mod = await import('./android.js?v=20261104-namefix2');
+    andCache.tpl ||= await fetchBuf('template.apk?v=20261104-namefix2');
     andCache.info ||= await (await fetch('template.json')).json();
     const baseKey = `base-${T.key}`; andCache[baseKey] ||= await fetchBuf(`android-${T.key}.zip`);
     const D = mod.DIR, extra = {};
