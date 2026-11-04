@@ -80,6 +80,11 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.03em;margin:4px 0 14px}
 .main-btn[disabled]{opacity:.4}
 .sub-btn{background:var(--glass2);color:var(--ink)}
 input[type=file]{display:none}
+.find{display:flex;gap:8px;margin-bottom:8px}
+.find input{flex:1;min-width:0;border:0;border-radius:999px;padding:11px 16px;font:inherit;font-size:16px;color:var(--ink);background:var(--glass2);box-shadow:var(--hi);outline:none}
+.find input::placeholder{color:var(--faint)}
+.find .btn{flex:0 0 auto;padding:10px 14px}
+.hint.small{font-size:13px;margin:0 4px 14px}
 .phones{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x mandatory}
 .phones figure{margin:0;flex:0 0 46%;scroll-snap-align:start}
 .phones canvas{width:100%;border-radius:18px;display:block;box-shadow:var(--lift)}
@@ -121,6 +126,11 @@ footer{color:var(--faint);font-size:12px;line-height:1.7;text-align:center;margi
     <h2>포켓몬 사진 올리기</h2>
     <p class="hint">배경은 올리자마자 자동으로 지웁니다
 남은 배경은 '지우기'를 켜고 그 부분을 누르면 됩니다</p>
+    <div class="find">
+      <input id="pkName" type="search" placeholder="포켓몬 이름 (예: 가디)" autocomplete="off" enterkeyhint="search">
+      <button class="btn" id="pkFind">나무위키에서 찾기</button>
+    </div>
+    <p class="hint small">문서가 열리면 그림을 길게 눌러 사진에 저장한 뒤 아래에 올리면 됩니다</p>
     <div class="pair">
       <div class="slot" data-who="me">
         <b>내 포켓몬</b>

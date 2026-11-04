@@ -365,5 +365,13 @@ if (/KAKAOTALK/i.test(navigator.userAgent)) setTimeout(() => { $('#inapp').hidde
 document.querySelectorAll('.slot').forEach(setupSlot);
 $('#getIos').onclick = getIos;
 $('#getAnd').onclick = getAnd;
+/* 나무위키에서 포켓몬 찾기: 이름 문서를 새 창으로 연다 */
+function findPokemon() {
+  const n = $('#pkName').value.trim();
+  if (!n) { toast('포켓몬 이름을 넣어 주십시오'); $('#pkName').focus(); return; }
+  window.open(`https://namu.wiki/w/${encodeURIComponent(n)}`, '_blank', 'noopener');
+}
+$('#pkFind').onclick = findPokemon;
+$('#pkName').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); findPokemon(); } });
 initTypes();
 document.fonts && document.fonts.ready.then(render);
