@@ -152,7 +152,7 @@ function trim(cv) {
 /* ---------- 테마 그림 만들기 ---------- */
 /* 포켓몬이 걸터앉은 첫 말풍선: 게임 대화창식 유리 판 (왼쪽 위, 오른쪽 아래는 직각)
    포켓몬을 먼저 그리고 판을 덮어서 발이 판 뒤로 숨는다 */
-const CB = { TOP: 40, H: 84, BOX: 40, W: { Send: 56, Receive: 62 } };   // 포켓몬 자리 40pt (10% 키움)
+const CB = { TOP: 48, H: 92, BOX: 48, W: { Send: 64, Receive: 70 } };   // 포켓몬 자리 48pt (처음보다 33% 키움)
 const RAD = 12;
 function boxPath(ctx, x0, y0, x1, y1, s) {
   ctx.beginPath();
@@ -186,8 +186,8 @@ function charBubble(side, spr, scale) {
   ctx.beginPath(); ctx.moveTo((cx - 4) * s, (cy - 2.2) * s); ctx.lineTo(cx * s, (cy + 2) * s); ctx.lineTo((cx + 4) * s, (cy - 2.2) * s); ctx.stroke();
   return c;
 }
-const CAP = { Send: [13, 54], Receive: [43, 54] };      // 늘어나는 한 줄의 위치 (왼쪽, 위) pt
-const INSET = { Send: '52px 16px 12px 26px', Receive: '52px 24px 12px 26px' };
+const CAP = { Send: [13, 62], Receive: [51, 62] };      // 늘어나는 한 줄의 위치 (왼쪽, 위) pt
+const INSET = { Send: '60px 16px 12px 34px', Receive: '60px 30px 12px 26px' };   // 포켓몬 쪽 여백을 넓혀 한 글자도 그림 폭보다 넓게
 const PLAIN = { W: 32, H: 40, CAP: [13, 14] };
 
 /* 친구 목록 배경: 오른쪽 아래 구석에 내 포켓몬 */
@@ -270,14 +270,14 @@ function updateButtons() {
 const bytesOf = async (c) => new Uint8Array(await (await blobOf(c)).arrayBuffer());
 const fetchBuf = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error(u); return r.arrayBuffer(); };
 const andCache = {};
-const PAD = { Send: [16, 26, CB.TOP + 12, 12], Receive: [24, 26, CB.TOP + 12, 12] };
+const PAD = { Send: [16, 34, CB.TOP + 12, 12], Receive: [30, 26, CB.TOP + 12, 12] };
 async function getAnd() {
   if (/KAKAOTALK/i.test(navigator.userAgent)) { toast('카톡 안에서는 파일이 안 받아집니다. 크롬으로 열어 주십시오'); return; }
   const btn = $('#getAnd'); btn.disabled = true; btn.textContent = '만드는 중';
   try {
     const T = state.type, sp = state.sprites;
-    const mod = await import('./android.js?v=20261104-namefix2');
-    andCache.tpl ||= await fetchBuf('template.apk?v=20261104-namefix2');
+    const mod = await import('./android.js');
+    andCache.tpl ||= await fetchBuf('template.apk');
     andCache.info ||= await (await fetch('template.json')).json();
     const baseKey = `base-${T.key}`; andCache[baseKey] ||= await fetchBuf(`android-${T.key}.zip`);
     const D = mod.DIR, extra = {};
@@ -289,21 +289,12 @@ async function getAnd() {
     const listImg = await loadImg(URL.createObjectURL(await bz.file(`${D}theme_background_image.png`).async('blob')));
     extra[`${D}theme_background_image.png`] = await bytesOf(listBg(listImg, sp.me));
     for (let i = 0; i < 4; i++) extra[`${D}theme_passcode_0${i + 1}_checked_image.png`] = await bytesOf(bullet(3, true, sp[BULLET_WHO[i]]));
-    // Use the selected Pokémon type's thumbnail as the installed app icon.
-    const iconImage = await loadImg(`thumb-${T.key}.jpg`);
-    const iconCanvas = document.createElement('canvas');
-    iconCanvas.width = iconCanvas.height = 192;
-    const iconCtx = iconCanvas.getContext('2d');
-    iconCtx.fillStyle = '#FFFFFF'; iconCtx.fillRect(0, 0, 192, 192);
-    const crop = Math.min(iconImage.width, iconImage.height);
-    iconCtx.drawImage(iconImage, (iconImage.width-crop)/2, (iconImage.height-crop)/2, crop, crop, 0, 0, 192, 192);
-    extra[`${D}icon.png`] = await bytesOf(iconCanvas);
     const apk = await mod.buildApk(andCache.tpl, andCache[baseKey], andCache.info, T.android, `포켓몬 ${T.name} 커스텀`, extra);
     const blob = new Blob([apk], { type: 'application/vnd.android.package-archive' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `pokemon-${T.key}-custom.apk`;
     document.body.appendChild(a); a.click(); a.remove();
     toast('파일을 받았습니다. 알림에서 눌러 설치해 주십시오');
-  } catch (e) { console.error(e); toast('APK 생성 오류: ' + (e?.message || String(e))); }
+  } catch (e) { console.error(e); toast('만들지 못했습니다. 다시 눌러 주십시오'); }
   btn.textContent = '안드로이드용 받기'; updateButtons();
 }
 
@@ -334,7 +325,7 @@ function render() {
       const tw = ctx.measureText(txt).width;
       if (first) {
         const ch = charBubble(side, side === 'Send' ? sp.me : sp.friend, 3), [cl, ct] = CAP[side];
-        const ins = side === 'Send' ? [16, 26] : [24, 26]; const w = Math.max(CB.W[side] * PT, tw + (ins[0] + ins[1]) * PT), h = CB.H * PT;
+        const ins = side === 'Send' ? [16, 34] : [30, 26]; const w = Math.max(CB.W[side] * PT, tw + (ins[0] + ins[1]) * PT), h = CB.H * PT;
         const x = side === 'Send' ? 450 - 14 - w : 62;
         if (side === 'Receive') { ctx.save(); ctx.beginPath(); ctx.roundRect(12, y + CB.TOP * PT, 42, 42, 15); ctx.clip(); ctx.drawImage(A['profileImg01@3x'], 12, y + CB.TOP * PT, 42, 42); ctx.restore(); }
         nine(ctx, ch, 3, cl, ct, x, y, w, h); ctx.fillStyle = T.text; ctx.fillText(txt, x + ins[0] * PT, y + (CB.TOP + 12) * PT + 17); y += h + 8;
