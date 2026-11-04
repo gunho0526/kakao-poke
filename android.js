@@ -50,7 +50,7 @@ export function ninePatch(png, cap, pad) {
 // Reference app identity must not leak into generated themes. All replacements
 // are length-preserving so the compiled Android string pools stay valid.
 const OLD_PACKAGE = 'com.kakao.talk.theme.mayimessage1';
-const NEW_PACKAGE = 'com.kakao.talk.theme.pokecustom02';
+const NEW_PACKAGE = 'com.kakao.talk.theme.pokecustom01';
 const OLD_LABEL = '아이메세지_카톡테마_블루';
 function replaceExact(bytes, from, to, encoding = 'utf8') {
   const encode = (s) => encoding === 'utf16' ? Uint8Array.from([...s].flatMap(c => [c.charCodeAt(0) & 255, c.charCodeAt(0) >>> 8])) : new TextEncoder().encode(s);
@@ -158,10 +158,35 @@ function applyThemeColors(data, info, colors) {
   return out;
 }
 function zipRecord(data) { return { method: 0, crc: crc32(data) >>> 0, csize: data.length, usize: data.length, data }; }
-function themeLabel(name) {
-  const max = new TextEncoder().encode(OLD_LABEL).length;
-  while (new TextEncoder().encode(name).length > max) name = name.slice(0, -1);
-  return name + ' '.repeat(max - new TextEncoder().encode(name).length);
+function replaceCompiledLabels(input, name) {
+  const out = input.slice();
+  const enc = new TextEncoder();
+  const old = ['아이메세지_카톡테마_블루', '아이메세지_카톡테마_블루 테마 적용하기'];
+  const labels = [name, name + ' 테마 적용하기'];
+  for (let k = 0; k < old.length; k++) {
+    const needle = enc.encode(old[k]);
+    let matches = 0;
+    for (let i = 2; i < out.length - needle.length; i++) {
+      if (out[i - 1] !== needle.length || out[i + needle.length] !== 0) continue;
+      let found = true;
+      for (let j = 0; j < needle.length; j++) if (out[i+j] !== needle[j]) { found = false; break; }
+      if (!found) continue;
+      let label = labels[k];
+      while (enc.encode(label).length > needle.length) label = label.slice(0, -1);
+      const utf8 = enc.encode(label);
+      // Keep the compiled string pool's byte offsets and byte-length intact.
+      // Spaces pad the fixed allocation; update UTF-16 character count.
+      const padded = label + ' '.repeat(needle.length - utf8.length);
+      const bytes = enc.encode(padded);
+      if (bytes.length !== needle.length) throw new Error('APK 이름 길이 오류');
+      out[i - 2] = padded.length; // UTF-16 code-unit count (short UTF-8 pool string)
+      out.set(bytes, i);
+      matches++;
+      i += needle.length;
+    }
+    if (matches !== 1) throw new Error('APK 앱 이름 위치 오류: ' + old[k] + ' (' + matches + ')');
+  }
+  return out;
 }
 
 export async function buildApk(template, base, info, colors, name, extra) {
@@ -172,21 +197,18 @@ export async function buildApk(template, base, info, colors, name, extra) {
   if (!tpl.has('classes.dex') || !tpl.has('AndroidManifest.xml') || !tpl.has('resources.arsc')) {
     throw new Error('THEME_TEMPLATE_INVALID: 완전한 카카오톡 테마 APK가 필요합니다.');
   }
-  const label = themeLabel(name);
   for (const [path, rec] of tpl) {
     let src = rec;
     if (path === 'AndroidManifest.xml') {
       const changed = replaceExact(await inflate(rec), OLD_PACKAGE, NEW_PACKAGE, 'utf16');
       if (!changed.count) throw new Error('APK 매니페스트 패키지 교체 실패');
-      src = zipRecord(changed.data);
+      src = zipRecord(setManifestAuthor(changed.data, 'geonho'));
     }
     if (path === 'resources.arsc') {
       let changed = replaceExact(await inflate(rec), OLD_PACKAGE, NEW_PACKAGE, 'utf16');
       if (!changed.count) throw new Error('APK 리소스 패키지 교체 실패');
-      // Keep the compiled UTF-8 string pool byte lengths unchanged.
-      // Preserve the compiled string pool: overwriting a UTF-8 label without
-      // updating both string lengths makes Android reject the APK.
-      src = zipRecord(changed.data);
+      const named = replaceCompiledLabels(changed.data, name);
+      src = zipRecord(applyThemeColors(named, info, colors));
     }
     if (path === 'classes.dex') {
       const changed = replaceExact(await inflate(rec), OLD_PACKAGE, NEW_PACKAGE);
