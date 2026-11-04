@@ -191,10 +191,13 @@ const INSET = { Send: '60px 16px 12px 34px', Receive: '60px 30px 12px 26px' };  
 const PLAIN = { W: 32, H: 40, CAP: [13, 14] };
 
 /* 친구 목록 배경: 오른쪽 아래 구석에 내 포켓몬 */
-function listBg(base, spr) {
+// 발끝 위치(그림 높이 대비): 아이폰은 배경이 탭바 뒤까지 깔려 탭바(약 91.5%부터)가 발끝을 살짝 가리고,
+// 안드로이드는 배경이 탭바 위에서 끝나므로 그림 바닥 아래로 살짝 내려 발끝이 잘리게 한다
+const FEET = { ios: 0.925, android: 1.02 };
+function listBg(base, spr, os = 'ios') {
   const c = canvas(base.width, base.height), ctx = c.getContext('2d'); ctx.drawImage(base, 0, 0);
   if (!spr) return c;
-  const w = c.width, h = c.height, box = w * 0.30, x = w - box - w * 0.05, y = h - box - h * 0.10;   // 탭바(아래 약 13%)가 발끝을 아주 살짝 가리게
+  const w = c.width, h = c.height, box = w * 0.30, x = w - box - w * 0.05, y = h * FEET[os] - box;
   ctx.save(); ctx.filter = `blur(${w * 0.012}px)`; ctx.fillStyle = 'rgba(60,30,20,.18)';
   ctx.beginPath(); ctx.ellipse(x + box / 2, y + box, box * 0.38, box * 0.06, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   drawFit(ctx, spr, x, y, box, box);
@@ -287,7 +290,7 @@ async function getAnd() {
     }
     const bz = await JSZip.loadAsync(andCache[baseKey]);
     const listImg = await loadImg(URL.createObjectURL(await bz.file(`${D}theme_background_image.png`).async('blob')));
-    extra[`${D}theme_background_image.png`] = await bytesOf(listBg(listImg, sp.me));
+    extra[`${D}theme_background_image.png`] = await bytesOf(listBg(listImg, sp.me, 'android'));
     for (let i = 0; i < 4; i++) extra[`${D}theme_passcode_0${i + 1}_checked_image.png`] = await bytesOf(bullet(3, true, sp[BULLET_WHO[i]]));
     const apk = await mod.buildApk(andCache.tpl, andCache[baseKey], andCache.info, T.android, `포켓몬 ${T.name} 커스텀`, extra);
     const blob = new Blob([apk], { type: 'application/vnd.android.package-archive' });
