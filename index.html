@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>포켓몬 카톡 테마 만들기</title>
+<meta property="og:title" content="포켓몬 카톡 테마 만들기">
+<meta property="og:description" content="타입 고르고 포켓몬 사진 두 장 올리면 내 테마가 나옵니다">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+  --bg:#1C1C1E; --ink:#F5F5F7; --muted:rgba(235,235,245,.62); --faint:rgba(235,235,245,.38);
+  --glass:rgba(255,255,255,.07); --glass2:rgba(255,255,255,.11);
+  --hi:inset 0 1px 0 rgba(255,255,255,.10); --lift:0 18px 40px rgba(0,0,0,.35);
+  --blur:saturate(1.6) blur(22px); --accent:#D5744A;
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --sans:"Pretendard Variable","Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);word-break:keep-all}
+body{padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+#ambient{position:fixed;inset:-12%;z-index:0;pointer-events:none;transition:background 700ms var(--ease-out)}
+#ambient::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(28,28,30,.12),rgba(28,28,30,.38) 65%,rgba(28,28,30,.6))}
+main{position:relative;z-index:1;max-width:560px;margin:0 auto;padding:28px 18px 80px}
+h1{font-size:28px;font-weight:800;letter-spacing:-.04em;margin:8px 4px 6px}
+.lead{color:var(--muted);margin:0 4px 26px;line-height:1.7;white-space:pre-line}
+.card{background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--hi),var(--lift);border-radius:28px;padding:20px;margin-bottom:18px}
+.step{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.02em}
+h2{font-size:20px;font-weight:800;letter-spacing:-.03em;margin:4px 0 14px}
+.hint{color:var(--muted);font-size:14px;line-height:1.7;margin:-6px 0 14px;white-space:pre-line}
+.types{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.type{border:0;padding:0;background:none;color:var(--ink);font:inherit;cursor:pointer;transition:transform 140ms}
+.type:active{transform:scale(.97)}
+.type img{width:100%;aspect-ratio:150/325;object-fit:cover;border-radius:12px;display:block}
+.type span{display:block;font-size:12px;margin-top:5px;color:var(--muted);text-align:center}
+.type.on img{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+.type.on span{color:var(--ink);font-weight:700}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.slot{background:var(--glass2);border-radius:22px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.slot b{font-size:15px}
+.canvasbox{position:relative;aspect-ratio:1;border-radius:16px;overflow:hidden;
+  background-color:#3a3a3c;background-image:linear-gradient(45deg,#48484a 25%,transparent 25%,transparent 75%,#48484a 75%),linear-gradient(45deg,#48484a 25%,transparent 25%,transparent 75%,#48484a 75%);
+  background-size:16px 16px;background-position:0 0,8px 8px;touch-action:manipulation}
+.canvasbox canvas{width:100%;height:100%;display:block;object-fit:contain}
+.canvasbox .empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--faint);font-size:13px;text-align:center;line-height:1.6;white-space:pre-line;pointer-events:none}
+.canvasbox.erasing{cursor:crosshair}
+.row{display:flex;gap:6px}
+.row .btn{flex:1;padding:10px 0}
+.btn{border:0;border-radius:999px;padding:10px 14px;font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--glass2);cursor:pointer;transition:transform 140ms,background 200ms}
+.btn:active{transform:scale(.97)}
+.btn.on{background:rgba(255,255,255,.24)}
+.btn[disabled]{opacity:.4;cursor:default}
+.main-btn{display:block;width:100%;border:0;border-radius:999px;padding:16px;font:inherit;font-size:16px;font-weight:700;color:#fff;
+  background:rgba(255,255,255,.24);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:inset 0 1px 0 rgba(255,255,255,.18);cursor:pointer;margin-top:10px;transition:transform 140ms}
+.main-btn:active{transform:scale(.97)}
+.main-btn[disabled]{opacity:.4}
+.sub-btn{background:var(--glass2)}
+input[type=file]{display:none}
+.phones{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x mandatory}
+.phones figure{margin:0;flex:0 0 46%;scroll-snap-align:start}
+.phones canvas{width:100%;border-radius:18px;display:block;box-shadow:var(--lift)}
+.phones figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
+.guide{color:var(--muted);font-size:14px;line-height:1.85;margin:14px 0 0;padding-left:18px}
+.guide b{color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translate(-50%,20px);opacity:0;background:rgba(255,255,255,.14);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);padding:12px 18px;border-radius:999px;font-size:14px;z-index:9;transition:opacity 240ms var(--ease-out),transform 240ms var(--ease-out);pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+footer{color:var(--faint);font-size:12px;line-height:1.7;text-align:center;margin-top:30px;white-space:pre-line}
+@supports not (backdrop-filter:blur(1px)){.card{background:rgba(44,44,46,.92)}}
+@media (prefers-reduced-motion:reduce){*{transition:opacity 200ms!important}}
+@media (max-width:380px){.types{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div id="ambient"></div>
+<main>
+  <h1>포켓몬 카톡 테마</h1>
+  <p class="lead">타입 하나 고르고
+내 포켓몬, 친구 포켓몬 사진을 올리면
+나만의 테마 파일이 나옵니다</p>
+
+  <section class="card">
+    <div class="step">1단계</div>
+    <h2>타입 고르기</h2>
+    <div class="types" id="types"></div>
+  </section>
+
+  <section class="card">
+    <div class="step">2단계</div>
+    <h2>포켓몬 사진 올리기</h2>
+    <p class="hint">배경은 올리자마자 자동으로 지웁니다
+남은 배경은 '지우기'를 켜고 그 부분을 누르면 됩니다</p>
+    <div class="pair">
+      <div class="slot" data-who="me">
+        <b>내 포켓몬</b>
+        <div class="canvasbox"><canvas></canvas><div class="empty">눌러서
+사진 고르기</div></div>
+        <div class="row"><button class="btn erase" disabled>지우기</button><button class="btn undo" disabled>되돌리기</button></div>
+        <input type="file" accept="image/*">
+      </div>
+      <div class="slot" data-who="friend">
+        <b>친구 포켓몬</b>
+        <div class="canvasbox"><canvas></canvas><div class="empty">눌러서
+사진 고르기</div></div>
+        <div class="row"><button class="btn erase" disabled>지우기</button><button class="btn undo" disabled>되돌리기</button></div>
+        <input type="file" accept="image/*">
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="step">3단계</div>
+    <h2>미리보기</h2>
+    <p class="hint">옆으로 넘기면 세 화면을 볼 수 있습니다</p>
+    <div class="phones">
+      <figure><canvas id="pvChat" width="450" height="975"></canvas><figcaption>채팅방</figcaption></figure>
+      <figure><canvas id="pvList" width="450" height="975"></canvas><figcaption>친구 목록</figcaption></figure>
+      <figure><canvas id="pvLock" width="450" height="975"></canvas><figcaption>잠금화면</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="step">4단계</div>
+    <h2>테마 받기</h2>
+    <button class="main-btn" id="getIos" disabled>아이폰용 받기</button>
+    <button class="main-btn sub-btn" id="getAnd" disabled>안드로이드용 받기 (준비 중)</button>
+    <ol class="guide">
+      <li>아이폰용 받기를 누르고 <b>카카오톡</b>을 고른 뒤 <b>나에게 보내기</b></li>
+      <li>나와의 채팅방에서 파일을 눌러 <b>테마 적용하기</b></li>
+      <li>채팅방 배경이 그대로면 설정 › 화면 › 배경화면에서 <b>테마 배경 적용</b></li>
+    </ol>
+  </section>
+
+  <footer>사진은 이 기기 안에서만 처리되고 어디에도 올라가지 않습니다
+개인 소장, 친구끼리 나눠 쓰는 용도로만 써 주십시오</footer>
+</main>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
