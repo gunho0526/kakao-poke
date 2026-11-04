@@ -150,33 +150,51 @@ function trim(cv) {
 }
 
 /* ---------- 테마 그림 만들기 ---------- */
-/* 포켓몬이 걸터앉은 첫 말풍선. 76 x 88pt, 아래 48pt가 도트 대화창, 위 40pt가 포켓몬 자리 */
-const CB = { W: 76, H: 88, TOP: 40, U: 2 };
+/* 포켓몬이 걸터앉은 첫 말풍선: 게임 대화창식 유리 판 (왼쪽 위, 오른쪽 아래는 직각)
+   포켓몬을 먼저 그리고 판을 덮어서 발이 판 뒤로 숨는다 */
+const CB = { TOP: 36, H: 80, BOX: 36, W: { Send: 52, Receive: 58 } };
+const RAD = 12;
+function boxPath(ctx, x0, y0, x1, y1, s) {
+  ctx.beginPath();
+  ctx.moveTo(x0 * s, y0 * s);
+  ctx.lineTo((x1 - RAD) * s, y0 * s);
+  ctx.arc((x1 - RAD) * s, (y0 + RAD) * s, RAD * s, -Math.PI / 2, 0);
+  ctx.lineTo(x1 * s, y1 * s);
+  ctx.lineTo((x0 + RAD) * s, y1 * s);
+  ctx.arc((x0 + RAD) * s, (y1 - RAD) * s, RAD * s, Math.PI / 2, Math.PI);
+  ctx.closePath();
+}
+function glassFill(side) {
+  if (side === 'Receive') return 'rgba(255,255,255,0.47)';
+  const [r, g, b] = hexRgb(state.type.main), m = (v) => Math.round(v + (255 - v) * 0.35);
+  return `rgba(${m(r)},${m(g)},${m(b)},0.745)`;
+}
 function charBubble(side, spr, scale) {
-  const T = state.type, c = canvas(CB.W * scale, CB.H * scale), ctx = c.getContext('2d');
-  const u = CB.U * scale, gw = CB.W / CB.U, gh = (CB.H - CB.TOP) / CB.U, oy = CB.TOP / CB.U;
-  const px = (x, y, col) => { ctx.fillStyle = col; ctx.fillRect(x * u, (oy + y) * u, u, u); };
-  ctx.fillStyle = '#FFF8E7'; ctx.fillRect(u, (oy + 1) * u, (gw - 2) * u, (gh - 2) * u);
-  const ring = (o, col) => {
-    for (let x = o + 1; x <= gw - 2 - o; x++) { px(x, o, col); px(x, gh - 1 - o, col); }
-    for (let y = o + 1; y <= gh - 2 - o; y++) { px(o, y, col); px(gw - 1 - o, y, col); }
-  };
-  ring(0, T.deep); [[1, 1], [gw - 2, 1], [1, gh - 2], [gw - 2, gh - 2]].forEach(([x, y]) => px(x, y, T.deep)); ring(2, T.main);
-  if (side === 'Receive') { const x0 = gw - 9, y0 = gh - 7; [5, 3, 1].forEach((n, i) => { for (let k = 0; k < n; k++) px(x0 + i + k, y0 + i, T.main); }); }
+  const W = CB.W[side], c = canvas(W * scale, CB.H * scale), ctx = c.getContext('2d'), s = scale;
   if (spr) {
-    const bx = side === 'Send' ? CB.W - 50 : 4;
-    drawFit(ctx, spr, bx * scale, 0, 46 * scale, (CB.TOP + 4) * scale);
+    const bx = side === 'Send' ? W - CB.BOX - 2 : 2;
+    drawFit(ctx, spr, bx * s, 0, CB.BOX * s, (CB.TOP + 5) * s);
   }
+  const x0 = 0.8, y0 = CB.TOP + 0.8, x1 = W - 0.8, y1 = CB.H - 0.8;
+  boxPath(ctx, x0, y0, x1, y1, s); ctx.fillStyle = glassFill(side); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.96)'; ctx.lineWidth = 1.5 * s; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.78)';
+  ctx.beginPath(); ctx.moveTo(x0 * s, y0 * s); ctx.lineTo((x0 + 5) * s, y0 * s); ctx.lineTo(x0 * s, (y0 + 5) * s); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x1 * s, y1 * s); ctx.lineTo((x1 - 5) * s, y1 * s); ctx.lineTo(x1 * s, (y1 - 5) * s); ctx.fill();
+  const cx = x1 - 12, cy = y1 - 10;                       // 오른쪽 아래 ∨
+  ctx.strokeStyle = side === 'Send' ? '#FFFFFF' : '#464240'; ctx.lineWidth = 1.5 * s; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo((cx - 4) * s, (cy - 2.2) * s); ctx.lineTo(cx * s, (cy + 2) * s); ctx.lineTo((cx + 4) * s, (cy - 2.2) * s); ctx.stroke();
   return c;
 }
-const CAP = { Send: [22, 62], Receive: [51, 62] };     // 늘어나는 한 줄의 위치 (왼쪽, 위) pt
-const INSET = { Send: '51px 16px 11px 16px', Receive: '51px 16px 11px 24px' };
+const CAP = { Send: [13, 50], Receive: [39, 50] };      // 늘어나는 한 줄의 위치 (왼쪽, 위) pt
+const INSET = { Send: '48px 16px 12px 26px', Receive: '48px 24px 12px 26px' };
+const PLAIN = { W: 32, H: 40, CAP: [13, 14] };
 
 /* 친구 목록 배경: 오른쪽 아래 구석에 내 포켓몬 */
 function listBg(base, spr) {
   const c = canvas(base.width, base.height), ctx = c.getContext('2d'); ctx.drawImage(base, 0, 0);
   if (!spr) return c;
-  const w = c.width, h = c.height, box = w * 0.30, x = w - box - w * 0.05, y = h - box - h * 0.05;
+  const w = c.width, h = c.height, box = w * 0.30, x = w - box - w * 0.05, y = h - box - h * 0.115;   // 탭바(아래 약 13%)에 발만 살짝 걸치게
   ctx.save(); ctx.filter = `blur(${w * 0.012}px)`; ctx.fillStyle = 'rgba(60,30,20,.18)';
   ctx.beginPath(); ctx.ellipse(x + box / 2, y + box, box * 0.38, box * 0.06, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   drawFit(ctx, spr, x, y, box, box);
@@ -250,7 +268,7 @@ function nine(ctx, img, scale, capL, capT, x, y, w, h) {   // 카톡처럼 한 �
   const L = capL * scale, Tt = capT * scale, W = img.width, H = img.height, f = PT / scale;
   const sx = [0, L, L + 1, W], sy = [0, Tt, Tt + 1, H];
   const dx = [x, x + L * f, x + w - (W - L - 1) * f, x + w], dy = [y, y + Tt * f, y + h - (H - Tt - 1) * f, y + h];
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = true;
   for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
     const sw = sx[i + 1] - sx[i], sh = sy[j + 1] - sy[j], dw = dx[i + 1] - dx[i], dh = dy[j + 1] - dy[j];
     if (sw > 0 && sh > 0 && dw > 0 && dh > 0) ctx.drawImage(img, sx[i], sy[j], sw, sh, dx[i], dy[j], dw, dh);
@@ -272,14 +290,14 @@ function render() {
       const tw = ctx.measureText(txt).width;
       if (first) {
         const ch = charBubble(side, side === 'Send' ? sp.me : sp.friend, 3), [cl, ct] = CAP[side];
-        const w = Math.max(CB.W * PT, tw + (16 + (side === 'Receive' ? 24 : 16)) * PT), h = CB.H * PT;
+        const ins = side === 'Send' ? [16, 26] : [24, 26]; const w = Math.max(CB.W[side] * PT, tw + (ins[0] + ins[1]) * PT), h = CB.H * PT;
         const x = side === 'Send' ? 450 - 14 - w : 62;
         if (side === 'Receive') { ctx.save(); ctx.beginPath(); ctx.roundRect(12, y + CB.TOP * PT, 42, 42, 15); ctx.clip(); ctx.drawImage(A['profileImg01@3x'], 12, y + CB.TOP * PT, 42, 42); ctx.restore(); }
-        nine(ctx, ch, 3, cl, ct, x, y, w, h); ctx.fillStyle = T.text; ctx.fillText(txt, x + 16 * PT, y + 51 * PT + 17); y += h + 8;
+        nine(ctx, ch, 3, cl, ct, x, y, w, h); ctx.fillStyle = T.text; ctx.fillText(txt, x + ins[0] * PT, y + 48 * PT + 17); y += h + 8;
       } else {
-        const img = A[`chatroomBubble${side}01@3x`], w = Math.max(48 * PT, tw + (16 + (side === 'Receive' ? 24 : 16)) * PT), h = 46 * PT;
+        const img = A[`chatroomBubble${side}01@3x`], w = Math.max(PLAIN.W * PT, tw + 42 * PT), h = 42 * PT;
         const x = side === 'Send' ? 450 - 14 - w : 62;
-        nine(ctx, img, 3, 22, 22, x, y, w, h); ctx.fillStyle = T.text; ctx.fillText(txt, x + 16 * PT, y + 11 * PT + 25); y += h + 18;
+        nine(ctx, img, 3, PLAIN.CAP[0], PLAIN.CAP[1], x, y, w, h); ctx.fillStyle = T.text; ctx.fillText(txt, x + 16 * PT, y + 12 * PT + 22); y += h + 14;
       }
     };
     msg('Receive', '테마 바꿨어?', true); msg('Receive', '포켓몬이 앉아 있네', false);
@@ -288,13 +306,13 @@ function render() {
     ctx.restore(); }
   // 친구 목록
   { const c = $('#pvList'), ctx = c.getContext('2d'); ctx.save(); ctx.clearRect(0, 0, 450, 975); roundClip(ctx, 450, 975, 36);
-    ctx.drawImage(listBg(A['mainBgImage@3x'], sp.me), 0, 0, 450, 860);
+    ctx.drawImage(listBg(A['mainBgImage@3x'], sp.me), 0, 0, 450, 975);
     ctx.fillStyle = T.text; ctx.font = FONT(28, 800); ctx.fillText('친구', 26, 62);
     ['나', '김민수', '이서연', '박지훈', '최유나', '정하늘'].forEach((n, i) => {
       const y = 96 + i * 100; ctx.save(); ctx.beginPath(); ctx.roundRect(26, y, 68, 68, 25); ctx.clip(); ctx.drawImage(A['profileImg01@3x'], 26, y, 68, 68); ctx.restore();
       ctx.fillStyle = T.text; ctx.font = FONT(22, 500); ctx.fillText(n, 112, y + 30); ctx.fillStyle = T.sub; ctx.font = FONT(16); ctx.fillText('상태메시지', 112, y + 56);
     });
-    ctx.fillStyle = T.tint2; ctx.fillRect(0, 860, 450, 115);
+    const px = ctx.getImageData(225, 850, 1, 1).data; ctx.fillStyle = `rgb(${px[0]},${px[1]},${px[2]})`; ctx.fillRect(0, 860, 450, 115);   // 탭바는 배경 맨 아래 색
     ['maintabIcoFriendsSelected@3x', 'maintabIcoChats@3x', 'maintabIcoBrowse@3x', 'maintabIcoShopping@3x'].forEach((k, i) => ctx.drawImage(A[k], 56 + i * 112 - 21, 878, 42, 42));
     ctx.restore(); }
   // 잠금화면 (두 자리 입력한 모습)
