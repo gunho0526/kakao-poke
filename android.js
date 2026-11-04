@@ -3,7 +3,7 @@
 // 사진으로 만든 그림(말풍선, 친구 목록 배경, 잠금 동그라미)을 끼우고,
 // 색 42칸과 테마 이름을 같은 길이로 덮어쓴 뒤 다시 서명한다.
 // 조립, 서명 코드는 Ruminem/kakaotalk-theme (Apache-2.0) 의 zip.js, apksign.js, apkmix.js 를 쓴다.
-import { readZip, writeZip, crc32 } from './zip.js';
+import { readZip, writeZip, crc32, inflate } from './zip.js';
 import { resign } from './apksign.js';
 
 import { CERT, PUBKEY, PRIVKEY } from './customkey.js';
@@ -91,19 +91,19 @@ export async function buildApk(template, base, info, colors, name, extra) {
   for (const [path, rec] of tpl) {
     let src = rec;
     if (path === 'AndroidManifest.xml') {
-      const changed = replaceExact(rec.data, OLD_PACKAGE, NEW_PACKAGE, 'utf16');
+      const changed = replaceExact(await inflate(rec), OLD_PACKAGE, NEW_PACKAGE, 'utf16');
       if (!changed.count) throw new Error('APK 매니페스트 패키지 교체 실패');
       src = zipRecord(changed.data);
     }
     if (path === 'resources.arsc') {
-      let changed = replaceExact(rec.data, OLD_PACKAGE, NEW_PACKAGE, 'utf16');
+      let changed = replaceExact(await inflate(rec), OLD_PACKAGE, NEW_PACKAGE, 'utf16');
       if (!changed.count) throw new Error('APK 리소스 패키지 교체 실패');
       changed = replaceExact(changed.data, OLD_LABEL, label);
       if (!changed.count) throw new Error('APK 테마 이름 교체 실패');
       src = zipRecord(changed.data);
     }
     if (path === 'classes.dex') {
-      const changed = replaceExact(rec.data, OLD_PACKAGE, NEW_PACKAGE);
+      const changed = replaceExact(await inflate(rec), OLD_PACKAGE, NEW_PACKAGE);
       if (!changed.count) throw new Error('APK 실행 코드 패키지 교체 실패');
       src = zipRecord(await fixDexChecksum(changed.data));
     }
