@@ -40,7 +40,7 @@ async function pickType(key) {
   document.querySelectorAll('.type').forEach((b) => b.classList.toggle('on', b.dataset.key === key));
   document.documentElement.style.setProperty('--accent', state.type.main);
   const [r, g, b] = hexRgb(state.type.main);
-  $('#ambient').style.background = `radial-gradient(40% 30% at 15% 10%, rgba(${r},${g},${b},.55), transparent 70%), radial-gradient(45% 35% at 90% 85%, rgba(${r},${g},${b},.35), transparent 70%), var(--bg)`;
+  $('#ambient').style.background = `radial-gradient(40% 30% at 15% 10%, rgba(${r},${g},${b},.45), transparent 70%), radial-gradient(45% 35% at 90% 85%, rgba(${r},${g},${b},.28), transparent 70%), var(--bg)`;
   state.assets = null;
   try {
     if (!state.zipBuf[key]) state.zipBuf[key] = await (await fetch(`theme-${key}.ktheme`)).arrayBuffer();
