@@ -152,7 +152,7 @@ function trim(cv) {
 /* ---------- 테마 그림 만들기 ---------- */
 /* 포켓몬이 걸터앉은 첫 말풍선: 게임 대화창식 유리 판 (왼쪽 위, 오른쪽 아래는 직각)
    포켓몬을 먼저 그리고 판을 덮어서 발이 판 뒤로 숨는다 */
-const CB = { TOP: 36, H: 80, BOX: 36, W: { Send: 52, Receive: 58 } };
+const CB = { TOP: 40, H: 84, BOX: 40, W: { Send: 56, Receive: 62 } };   // 포켓몬 자리 40pt (10% 키움)
 const RAD = 12;
 function boxPath(ctx, x0, y0, x1, y1, s) {
   ctx.beginPath();
@@ -186,15 +186,15 @@ function charBubble(side, spr, scale) {
   ctx.beginPath(); ctx.moveTo((cx - 4) * s, (cy - 2.2) * s); ctx.lineTo(cx * s, (cy + 2) * s); ctx.lineTo((cx + 4) * s, (cy - 2.2) * s); ctx.stroke();
   return c;
 }
-const CAP = { Send: [13, 50], Receive: [39, 50] };      // 늘어나는 한 줄의 위치 (왼쪽, 위) pt
-const INSET = { Send: '48px 16px 12px 26px', Receive: '48px 24px 12px 26px' };
+const CAP = { Send: [13, 54], Receive: [43, 54] };      // 늘어나는 한 줄의 위치 (왼쪽, 위) pt
+const INSET = { Send: '52px 16px 12px 26px', Receive: '52px 24px 12px 26px' };
 const PLAIN = { W: 32, H: 40, CAP: [13, 14] };
 
 /* 친구 목록 배경: 오른쪽 아래 구석에 내 포켓몬 */
 function listBg(base, spr) {
   const c = canvas(base.width, base.height), ctx = c.getContext('2d'); ctx.drawImage(base, 0, 0);
   if (!spr) return c;
-  const w = c.width, h = c.height, box = w * 0.30, x = w - box - w * 0.05, y = h - box - h * 0.115;   // 탭바(아래 약 13%)에 발만 살짝 걸치게
+  const w = c.width, h = c.height, box = w * 0.30, x = w - box - w * 0.05, y = h - box - h * 0.10;   // 탭바(아래 약 13%)가 발끝을 아주 살짝 가리게
   ctx.save(); ctx.filter = `blur(${w * 0.012}px)`; ctx.fillStyle = 'rgba(60,30,20,.18)';
   ctx.beginPath(); ctx.ellipse(x + box / 2, y + box, box * 0.38, box * 0.06, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   drawFit(ctx, spr, x, y, box, box);
@@ -261,7 +261,42 @@ async function getIos() {
   } catch (e) { console.error(e); toast('만들지 못했습니다. 다시 눌러 주십시오'); }
   btn.textContent = '아이폰용 받기'; updateButtons();
 }
-function updateButtons() { $('#getIos').disabled = !(state.assets && state.sprites.me && state.sprites.friend); }
+function updateButtons() {
+  const ok = !!(state.assets && state.sprites.me && state.sprites.friend);
+  $('#getIos').disabled = !ok; $('#getAnd').disabled = !ok;
+}
+
+/* ---------- 안드로이드 (.apk) ---------- */
+const bytesOf = async (c) => new Uint8Array(await (await blobOf(c)).arrayBuffer());
+const fetchBuf = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error(u); return r.arrayBuffer(); };
+const andCache = {};
+const PAD = { Send: [16, 26, CB.TOP + 12, 12], Receive: [24, 26, CB.TOP + 12, 12] };
+async function getAnd() {
+  if (/KAKAOTALK/i.test(navigator.userAgent)) { toast('카톡 안에서는 파일이 안 받아집니다. 크롬으로 열어 주십시오'); return; }
+  const btn = $('#getAnd'); btn.disabled = true; btn.textContent = '만드는 중';
+  try {
+    const T = state.type, sp = state.sprites;
+    const mod = await import('./android.js');
+    andCache.tpl ||= await fetchBuf('template.apk');
+    andCache.info ||= await (await fetch('template.json')).json();
+    const baseKey = `base-${T.key}`; andCache[baseKey] ||= await fetchBuf(`android-${T.key}.zip`);
+    const D = mod.DIR, extra = {};
+    for (const [side, who] of [['Send', 'me'], ['Receive', 'you']]) {
+      const png = await bytesOf(charBubble(side, side === 'Send' ? sp.me : sp.friend, 3));
+      extra[`${D}theme_chatroom_bubble_${who}_01_image.9.png`] = mod.ninePatch(png, CAP[side], PAD[side]);
+    }
+    const bz = await JSZip.loadAsync(andCache[baseKey]);
+    const listImg = await loadImg(URL.createObjectURL(await bz.file(`${D}theme_background_image.png`).async('blob')));
+    extra[`${D}theme_background_image.png`] = await bytesOf(listBg(listImg, sp.me));
+    for (let i = 0; i < 4; i++) extra[`${D}theme_passcode_0${i + 1}_checked_image.png`] = await bytesOf(bullet(3, true, sp[BULLET_WHO[i]]));
+    const apk = await mod.buildApk(andCache.tpl, andCache[baseKey], andCache.info, T.android, `포켓몬 ${T.name} 커스텀`, extra);
+    const blob = new Blob([apk], { type: 'application/vnd.android.package-archive' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `pokemon-${T.key}-custom.apk`;
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('파일을 받았습니다. 알림에서 눌러 설치해 주십시오');
+  } catch (e) { console.error(e); toast('만들지 못했습니다. 다시 눌러 주십시오'); }
+  btn.textContent = '안드로이드용 받기'; updateButtons();
+}
 
 /* ---------- 3단계: 미리보기 ---------- */
 function nine(ctx, img, scale, capL, capT, x, y, w, h) {   // 카톡처럼 한 줄만 늘이기
@@ -293,7 +328,7 @@ function render() {
         const ins = side === 'Send' ? [16, 26] : [24, 26]; const w = Math.max(CB.W[side] * PT, tw + (ins[0] + ins[1]) * PT), h = CB.H * PT;
         const x = side === 'Send' ? 450 - 14 - w : 62;
         if (side === 'Receive') { ctx.save(); ctx.beginPath(); ctx.roundRect(12, y + CB.TOP * PT, 42, 42, 15); ctx.clip(); ctx.drawImage(A['profileImg01@3x'], 12, y + CB.TOP * PT, 42, 42); ctx.restore(); }
-        nine(ctx, ch, 3, cl, ct, x, y, w, h); ctx.fillStyle = T.text; ctx.fillText(txt, x + ins[0] * PT, y + 48 * PT + 17); y += h + 8;
+        nine(ctx, ch, 3, cl, ct, x, y, w, h); ctx.fillStyle = T.text; ctx.fillText(txt, x + ins[0] * PT, y + (CB.TOP + 12) * PT + 17); y += h + 8;
       } else {
         const img = A[`chatroomBubble${side}01@3x`], w = Math.max(PLAIN.W * PT, tw + 42 * PT), h = 42 * PT;
         const x = side === 'Send' ? 450 - 14 - w : 62;
@@ -328,5 +363,6 @@ function render() {
 /* ---------- 시작 ---------- */
 document.querySelectorAll('.slot').forEach(setupSlot);
 $('#getIos').onclick = getIos;
+$('#getAnd').onclick = getAnd;
 initTypes();
 document.fonts && document.fonts.ready.then(render);
